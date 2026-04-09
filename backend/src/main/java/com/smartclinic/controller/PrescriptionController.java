@@ -18,8 +18,10 @@ public class PrescriptionController {
 
     private final PrescriptionService prescriptionService;
 
-    @PostMapping
-    public ResponseEntity<Prescription> createPrescription(@Valid @RequestBody PrescriptionRequest request) {
+    @PostMapping("/{token}")
+    public ResponseEntity<Prescription> createPrescription(
+            @PathVariable String token,
+            @Valid @RequestBody PrescriptionRequest request) {
         Prescription prescription = prescriptionService.createPrescription(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(prescription);
     }

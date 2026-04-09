@@ -63,12 +63,18 @@ CREATE TABLE IF NOT EXISTS prescription (
     CONSTRAINT fk_prescription_patient     FOREIGN KEY (patient_id)     REFERENCES patient(id)
 );
 
+CREATE TABLE IF NOT EXISTS doctor_available_times (
+    doctor_id  BIGINT      NOT NULL,
+    time_slot  VARCHAR(10) NOT NULL,
+    CONSTRAINT fk_avail_doctor FOREIGN KEY (doctor_id) REFERENCES doctor(id)
+);
+
 -- ============================================================
 -- INDEXES
 -- ============================================================
 
-CREATE INDEX IF NOT EXISTS idx_appointment_doctor_date ON appointment(doctor_id, appointment_date);
-CREATE INDEX IF NOT EXISTS idx_appointment_patient      ON appointment(patient_id);
+CREATE INDEX idx_appointment_doctor_date ON appointment(doctor_id, appointment_date);
+CREATE INDEX idx_appointment_patient      ON appointment(patient_id);
 
 -- ============================================================
 -- SEED DATA
@@ -77,23 +83,36 @@ CREATE INDEX IF NOT EXISTS idx_appointment_patient      ON appointment(patient_i
 -- Default admin (password: admin123)
 INSERT IGNORE INTO admin (name, email, password)
 VALUES ('System Admin', 'admin@smartclinic.com',
-        '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy');
+        '$2b$10$c.3UE6w0yWRQZunGvYRNwe.f.HWjicRpnwOtkfBl4ARTTneQgGBnC');
 
 -- Sample doctors
 INSERT IGNORE INTO doctor (name, speciality, email, password, phone) VALUES
-('Dr. Ana Costa',     'Cardiology',     'ana.costa@smartclinic.com',    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '11 9 9001-0001'),
-('Dr. Bruno Lima',    'Neurology',      'bruno.lima@smartclinic.com',   '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '11 9 9001-0002'),
-('Dr. Clara Santos',  'Pediatrics',     'clara.santos@smartclinic.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '11 9 9001-0003'),
-('Dr. Diego Rocha',   'Orthopedics',    'diego.rocha@smartclinic.com',  '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '11 9 9001-0004'),
-('Dr. Elena Ferreira','Dermatology',    'elena.f@smartclinic.com',      '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '11 9 9001-0005');
+('Dr. Ana Costa',     'Cardiology',     'ana.costa@smartclinic.com',    '$2b$10$c.3UE6w0yWRQZunGvYRNwe.f.HWjicRpnwOtkfBl4ARTTneQgGBnC', '11 9 9001-0001'),
+('Dr. Bruno Lima',    'Neurology',      'bruno.lima@smartclinic.com',   '$2b$10$c.3UE6w0yWRQZunGvYRNwe.f.HWjicRpnwOtkfBl4ARTTneQgGBnC', '11 9 9001-0002'),
+('Dr. Clara Santos',  'Pediatrics',     'clara.santos@smartclinic.com', '$2b$10$c.3UE6w0yWRQZunGvYRNwe.f.HWjicRpnwOtkfBl4ARTTneQgGBnC', '11 9 9001-0003'),
+('Dr. Diego Rocha',   'Orthopedics',    'diego.rocha@smartclinic.com',  '$2b$10$c.3UE6w0yWRQZunGvYRNwe.f.HWjicRpnwOtkfBl4ARTTneQgGBnC', '11 9 9001-0004'),
+('Dr. Elena Ferreira','Dermatology',    'elena.f@smartclinic.com',      '$2b$10$c.3UE6w0yWRQZunGvYRNwe.f.HWjicRpnwOtkfBl4ARTTneQgGBnC', '11 9 9001-0005');
+
+-- Doctor available time slots
+INSERT IGNORE INTO doctor_available_times (doctor_id, time_slot)
+SELECT d.id, t.time_slot
+FROM doctor d
+JOIN (
+    SELECT '09:00' AS time_slot UNION ALL
+    SELECT '10:00' UNION ALL
+    SELECT '11:00' UNION ALL
+    SELECT '14:00' UNION ALL
+    SELECT '15:00' UNION ALL
+    SELECT '16:00'
+) t;
 
 -- Sample patients (password: patient123)
 INSERT IGNORE INTO patient (name, email, password, phone, date_of_birth) VALUES
-('João Silva',    'joao.silva@email.com',    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '11 9 8001-0001', '1985-03-15'),
-('Maria Oliveira','maria.oliveira@email.com','$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '11 9 8001-0002', '1990-07-22'),
-('Carlos Mendes', 'carlos.mendes@email.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '11 9 8001-0003', '1978-11-05'),
-('Fernanda Reis', 'fernanda.reis@email.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '11 9 8001-0004', '1995-01-30'),
-('Lucas Barbosa', 'lucas.barbosa@email.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '11 9 8001-0005', '2000-06-18');
+('João Silva',    'joao.silva@email.com',    '$2b$10$c.3UE6w0yWRQZunGvYRNwe.f.HWjicRpnwOtkfBl4ARTTneQgGBnC', '11 9 8001-0001', '1985-03-15'),
+('Maria Oliveira','maria.oliveira@email.com','$2b$10$c.3UE6w0yWRQZunGvYRNwe.f.HWjicRpnwOtkfBl4ARTTneQgGBnC', '11 9 8001-0002', '1990-07-22'),
+('Carlos Mendes', 'carlos.mendes@email.com', '$2b$10$c.3UE6w0yWRQZunGvYRNwe.f.HWjicRpnwOtkfBl4ARTTneQgGBnC', '11 9 8001-0003', '1978-11-05'),
+('Fernanda Reis', 'fernanda.reis@email.com', '$2b$10$c.3UE6w0yWRQZunGvYRNwe.f.HWjicRpnwOtkfBl4ARTTneQgGBnC', '11 9 8001-0004', '1995-01-30'),
+('Lucas Barbosa', 'lucas.barbosa@email.com', '$2b$10$c.3UE6w0yWRQZunGvYRNwe.f.HWjicRpnwOtkfBl4ARTTneQgGBnC', '11 9 8001-0005', '2000-06-18');
 
 -- Sample appointments
 INSERT IGNORE INTO appointment (doctor_id, patient_id, appointment_date, appointment_time, status, notes) VALUES

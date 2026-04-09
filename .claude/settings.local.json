@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker --version)",
+      "Bash(docker-compose --version)",
+      "Bash(docker compose:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/actuator/health)",
+      "Bash(curl -s http://localhost:8080/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(gh issue:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(gh api:*)",
+      "Bash(gh repo:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/api/doctors)",
+      "Bash(npx --version)",
+      "Bash(curl:*)",
+      "Bash(docker exec smart-clinic-mysql:*)",
+      "Bash(docker exec:*)",
+      "Bash(node -e ':*)",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(mkdir -p /tmp/hashgen)",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(npm init:*)",
+      "Bash(python3 -m json.tool)",
+      "Bash(clip)"
+    ]
+  }
+}

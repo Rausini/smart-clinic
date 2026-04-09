@@ -1,12 +1,16 @@
 package com.smartclinic.service;
 
 import com.smartclinic.dto.DoctorRequest;
+import com.smartclinic.entity.Appointment;
 import com.smartclinic.entity.Doctor;
+import com.smartclinic.repository.AppointmentRepository;
 import com.smartclinic.repository.DoctorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -15,6 +19,8 @@ public class DoctorService {
 
     private final DoctorRepository doctorRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AppointmentRepository appointmentRepository;
+    private final TokenService tokenService;
 
     public List<Doctor> getAllDoctors() {
         return doctorRepository.findAll();
@@ -35,6 +41,7 @@ public class DoctorService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .phone(request.getPhone())
+                .availableTimes(request.getAvailableTimes())
                 .build();
         return doctorRepository.save(doctor);
     }
@@ -49,5 +56,26 @@ public class DoctorService {
 
     public void deleteDoctor(Long id) {
         doctorRepository.deleteById(id);
+    }
+
+    public List<String> getAvailableTimes(Long doctorId, LocalDate date, String token) {
+        tokenService.extractUsername(token);
+        Doctor doctor = getDoctorById(doctorId);
+        List<LocalTime> booked = appointmentRepository
+                .findByDoctorIdAndAppointmentDate(doctorId, date)
+                .stream()
+                .map(Appointment::getAppointmentTime)
+                .toList();
+        List<String> times = doctor.getAvailableTimes();
+        if (times == null) return List.of();
+        return times.stream()
+                .filter(slot -> !booked.contains(LocalTime.parse(slot)))
+                .toList();
+    }
+
+    public boolean validateLogin(String email, String password) {
+        return doctorRepository.findByEmail(email)
+                .map(d -> passwordEncoder.matches(password, d.getPassword()))
+                .orElse(false);
     }
 }

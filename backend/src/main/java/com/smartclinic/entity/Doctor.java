@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "doctor")
@@ -34,6 +35,11 @@ public class Doctor {
 
     @Column(length = 20)
     private String phone;
+
+    @ElementCollection
+    @CollectionTable(name = "doctor_available_times", joinColumns = @JoinColumn(name = "doctor_id"))
+    @Column(name = "time_slot")
+    private List<String> availableTimes;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

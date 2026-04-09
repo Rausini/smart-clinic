@@ -47,6 +47,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/patients/register").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/doctors/**").permitAll()
+                .requestMatchers("/api/doctors/availability/**").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session ->
