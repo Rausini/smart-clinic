@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Clinic — Doctor Portal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <style>
+    body { background: #f0f6ff; }
+    #loginCard { max-width: 420px; margin: 80px auto; }
+    #dashboard { display: none; }
+    .card { border: none; box-shadow: 0 2px 12px rgba(0,0,0,.08); border-radius: 12px; }
+    table th { background: #0d6efd; color: #fff; }
+    .badge-scheduled  { background: #0d6efd; }
+    .badge-completed  { background: #198754; }
+    .badge-cancelled  { background: #dc3545; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-primary px-4">
+  <span class="navbar-brand">🏥 Smart Clinic — Doctor Portal</span>
+  <span id="doctorName" class="text-white me-3"></span>
+  <button id="logoutBtn" class="btn btn-outline-light btn-sm d-none" onclick="logout()">Logout</button>
+</nav>
+
+<!-- LOGIN -->
+<div id="loginCard" class="card p-4">
+  <h4 class="mb-3 text-center">Doctor Login</h4>
+  <div id="loginError" class="alert alert-danger d-none"></div>
+  <div class="mb-3">
+    <label class="form-label">Email</label>
+    <input type="email" id="loginEmail" class="form-control" placeholder="doctor@smartclinic.com"/>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Password</label>
+    <input type="password" id="loginPassword" class="form-control"/>
+  </div>
+  <button class="btn btn-primary w-100" onclick="login()">Sign In as Doctor</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="container py-4">
+  <div class="card p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">📅 My Patient Appointments</h5>
+      <div>
+        <select id="statusFilter" class="form-select form-select-sm d-inline-block w-auto me-2" onchange="filterAppointments()">
+          <option value="ALL">All Status</option>
+          <option value="SCHEDULED">Scheduled</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+        <button class="btn btn-outline-primary btn-sm" onclick="loadAppointments()">Refresh</button>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Patient</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+            <th>Notes</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="appointmentsTable"></tbody>
+      </table>
+    </div>
+    <p id="noAppts" class="text-muted text-center d-none">No appointments found.</p>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:8080/api';
+  let token = null;
+  let doctorId = null;
+  let allAppointments = [];
+
+  async function login() {
+    const email    = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errEl    = document.getElementById('loginError');
+    errEl.classList.add('d-none');
+
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role: 'DOCTOR' })
+      });
+      if (!res.ok) throw new Error('Invalid credentials');
+      const data = await res.json();
+      token    = data.token;
+      doctorId = data.userId;
+      document.getElementById('doctorName').textContent = `Welcome, ${data.name}`;
+      document.getElementById('loginCard').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('logoutBtn').classList.remove('d-none');
+      loadAppointments();
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.classList.remove('d-none');
+    }
+  }
+
+  async function loadAppointments() {
+    const res = await fetch(`${API}/appointments/doctor/${doctorId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    allAppointments = await res.json();
+    renderAppointments(allAppointments);
+  }
+
+  function filterAppointments() {
+    const filter = document.getElementById('statusFilter').value;
+    const filtered = filter === 'ALL'
+      ? allAppointments
+      : allAppointments.filter(a => a.status === filter);
+    renderAppointments(filtered);
+  }
+
+  function renderAppointments(appointments) {
+    const tbody  = document.getElementById('appointmentsTable');
+    const noAppt = document.getElementById('noAppts');
+
+    if (appointments.length === 0) {
+      tbody.innerHTML = '';
+      noAppt.classList.remove('d-none');
+      return;
+    }
+    noAppt.classList.add('d-none');
+
+    const badgeMap = {
+      SCHEDULED: 'badge-scheduled',
+      COMPLETED: 'badge-completed',
+      CANCELLED: 'badge-cancelled'
+    };
+
+    tbody.innerHTML = appointments.map(a => `
+      <tr>
+        <td>${a.id}</td>
+        <td><strong>${a.patient.name}</strong><br/><small class="text-muted">${a.patient.email}</small></td>
+        <td>${a.appointmentDate}</td>
+        <td>${a.appointmentTime}</td>
+        <td><span class="badge ${badgeMap[a.status] || 'bg-secondary'}">${a.status}</span></td>
+        <td>${a.notes || '—'}</td>
+        <td>
+          ${a.status === 'SCHEDULED' ? `
+            <button class="btn btn-success btn-sm me-1" onclick="completeAppt(${a.id})">Complete</button>
+            <button class="btn btn-secondary btn-sm" onclick="cancelAppt(${a.id})">Cancel</button>
+          ` : '—'}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  async function completeAppt(id) {
+    await fetch(`${API}/appointments/${id}/complete`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    loadAppointments();
+  }
+
+  async function cancelAppt(id) {
+    if (!confirm('Cancel this appointment?')) return;
+    await fetch(`${API}/appointments/${id}/cancel`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    loadAppointments();
+  }
+
+  function logout() {
+    token = null; doctorId = null; allAppointments = [];
+    document.getElementById('loginCard').style.display = 'block';
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('logoutBtn').classList.add('d-none');
+    document.getElementById('doctorName').textContent = '';
+  }
+</script>
+</body>
+</html>
